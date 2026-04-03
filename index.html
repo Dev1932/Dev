@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple WhatsApp-like Messenger</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0d1418; /* Dark blue background */
+            color: #ffffff;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 30%;
+            background-color: #1a2332; /* Darker blue */
+            padding: 10px;
+            border-right: 1px solid #ff0000; /* Red border */
+        }
+        .chat-list {
+            list-style: none;
+            padding: 0;
+        }
+        .chat-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+        }
+        .chat-item:hover {
+            background-color: #ff0000; /* Red hover */
+        }
+        .chat-item.active {
+            background-color: #ff0000;
+        }
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            background-color: #1a2332;
+            padding: 10px;
+            border-bottom: 1px solid #ff0000;
+        }
+        .messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #0d1418;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+        .message.sent {
+            background-color: #ff0000; /* Red for sent */
+            margin-left: auto;
+            text-align: right;
+        }
+        .message.received {
+            background-color: #1a2332; /* Dark blue for received */
+        }
+        .input-area {
+            display: flex;
+            padding: 10px;
+            background-color: #1a2332;
+            border-top: 1px solid #ff0000;
+        }
+        .message-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ff0000;
+            border-radius: 5px;
+            background-color: #0d1418;
+            color: #ffffff;
+        }
+        .send-btn {
+            background-color: #ff0000;
+            color: #ffffff;
+            border: none;
+            padding: 8px 15px;
+            margin-left: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .send-btn:hover {
+            background-color: #cc0000;
+        }
+        .status {
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Chats</h3>
+            <ul class="chat-list" id="chat-list">
+                <li class="chat-item active" data-chat="group1">Group Chat 1</li>
+                <li class="chat-item" data-chat="user1">User 1</li>
+                <li class="chat-item" data-chat="user2">User 2</li>
+            </ul>
+        </div>
+        <div class="chat-area">
+            <div class="chat-header">
+                <h4 id="chat-title">Group Chat 1</h4>
+                <div class="status" id="status">Online</div>
+            </div>
+            <div class="messages" id="messages">
+                <!-- Messages will be added here -->
+            </div>
+            <div class="input-area">
+                <input type="text" class="message-input" id="message-input" placeholder="Type a message...">
+                <input type="file" id="media-input" style="display: none;">
+                <button class="send-btn" id="media-btn">📎</button>
+                <button class="send-btn" id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const chatList = document.getElementById('chat-list');
+        const chatTitle = document.getElementById('chat-title');
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const mediaBtn = document.getElementById('media-btn');
+        const mediaInput = document.getElementById('media-input');
+
+        let currentChat = 'group1';
+        const chats = {
+            group1: { title: 'Group Chat 1', status: '3 members online', messages: [] },
+            user1: { title: 'User 1', status: 'Online', messages: [] },
+            user2: { title: 'User 2', status: 'Last seen 2 hours ago', messages: [] }
+        };
+
+        // Load messages from localStorage
+        function loadMessages() {
+            const stored = localStorage.getItem(`chat_${currentChat}`);
+            if (stored) {
+                chats[currentChat].messages = JSON.parse(stored);
+            }
+            renderMessages();
+        }
+
+        // Save messages to localStorage
+        function saveMessages() {
+            localStorage.setItem(`chat_${currentChat}`, JSON.stringify(chats[currentChat].messages));
+        }
+
+        // Render messages
+        function renderMessages() {
+            messagesDiv.innerHTML = '';
+            chats[currentChat].messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${msg.type}`;
+                msgDiv.textContent = msg.text;
+                messagesDiv.appendChild(msgDiv);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Send message
+        function sendMessage(text) {
+            if (text.trim()) {
+                chats[currentChat].messages.push({ type: 'sent', text });
+                saveMessages();
+                renderMessages();
+                messageInput.value = '';
+            }
+        }
+
+        // Simulate received message (for demo)
+        function receiveMessage() {
+            setTimeout(() => {
+                chats[currentChat].messages.push({ type: 'received', text: 'Hello from ' + chats[currentChat].title });
+                saveMessages();
+                renderMessages();
+                receiveMessage(); // Loop for demo
+            }, Math.random() * 5000 + 2000);
+        }
+
+        // Event listeners
+        chatList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('chat-item')) {
+                document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+                e.target.classList.add('active');
+                currentChat = e.target.dataset.chat;
+                chatTitle.textContent = chats[currentChat].title;
+                statusDiv.textContent = chats[currentChat].status;
+                loadMessages();
+            }
+        });
+
+        sendBtn.addEventListener('click', () => sendMessage(messageInput.value));
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage(messageInput.value);
+        });
+
+        mediaBtn.addEventListener('click', () => mediaInput.click());
+        mediaInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                sendMessage(`Shared media: ${file.name}`);
+            }
+        });
+
+        // Initialize
+        loadMessages();
+        receiveMessage();
+    </script>
+</body>
+</html>
